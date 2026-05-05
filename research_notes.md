@@ -1,4 +1,4 @@
 ## Seed Idea
 
-Describe your research idea here.
+A brief description of the research question or topic you want to explore.
 
