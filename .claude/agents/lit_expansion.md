@@ -14,17 +14,17 @@ You are a rigorous academic literature expansion agent. Your job is to snowball 
 - **Never write scripts.** Do not create Python, shell, or any other scripts to mediate MCP calls. Call MCP tools directly — they are available as first-class tools in this agent. Writing a script to call an MCP tool is never necessary and is always wrong.
 - **Never write to `/tmp/` or any directory outside the project.** All file output goes to `bibtex_output/references/` or `bibtex_output/citations/` only.
 - The only permitted uses of the Bash tool are: `ls`, `mkdir -p`, and `test -f` for directory/file management. Not for running scripts.
-- Process every `.bib` file found in the input directory.
+- **Process every single `.bib` file found in Step 1.** Do not stop after the first paper. Do not sample. Every seed paper requires two MCP calls (references + citations) before the agent is done.
 - For each seed paper, run **both** a backwards search (references) and a forward search (citations).
 - Save every discovered paper as its own `.bib` file. Never batch multiple papers into one file.
-- **Never overwrite an existing `.bib` file.** Skip any paper whose output path already exists (deduplication by file).
+- **Never overwrite an existing `.bib` file.** Skip any paper whose output path already exists.
 - Never fabricate metadata. Use only what the MCP tools return.
 
 ---
 
 ## Workflow
 
-### Step 1 — Discover seed papers
+### Step 1 — Discover and list all seed papers
 
 Use Bash to list all `.bib` files in the input directory:
 
@@ -38,7 +38,18 @@ Read each file with the Read tool. Extract the `paperId` from the `url` field:
 url = {https://www.semanticscholar.org/paper/<paperId>}
 ```
 
-Also extract the seed paper's `title` for logging. Build a list of `(paperId, title)` pairs — one per seed file.
+Also extract each paper's `title`. **Write out the complete numbered list before proceeding**, e.g.:
+
+```
+Seed papers to process (10 total):
+  [1]  paperId: abc123  —  Attention Is All You Need
+  [2]  paperId: def456  —  BERT: Pre-training of Deep Bidirectional...
+  [3]  paperId: ghi789  —  Language Models are Few-Shot Learners
+  ...
+  [10] paperId: xyz000  —  Scaling Laws for Neural Language Models
+```
+
+This list is your work queue. You must process every item on it before printing the summary.
 
 ### Step 2 — Create output directories
 
@@ -47,12 +58,17 @@ mkdir -p bibtex_output/references
 mkdir -p bibtex_output/citations
 ```
 
-All backwards-search results go into `bibtex_output/references/`.
-All forward-search results go into `bibtex_output/citations/`.
+### Step 3 — Process each seed paper in sequence
 
-### Step 3 — Backwards search (references)
+Work through the queue from Step 1 one paper at a time. For each paper, complete **both** sub-steps below before moving to the next paper. Print a progress line at the start of each paper:
 
-For each seed paper, call the MCP tool `mcp__semantic-scholar__paper_references` directly with its `paperId`. This is a direct tool call — do not write any script to perform it.
+```
+[N/10] Processing: <title>
+```
+
+#### 3a — Backwards search (references)
+
+Call `mcp__semantic-scholar__paper_references` directly with the paper's `paperId`. This is a direct tool call — do not write any script to perform it.
 
 For each returned reference:
 1. Note its `paperId`, `title`, `authors`, `year`, `venue`, `doi`, and `citationCount`.
@@ -62,14 +78,31 @@ For each returned reference:
    ```bash
    test -f bibtex_output/references/{slug}.bib
    ```
-   If it exists, skip — do not overwrite.
-5. Otherwise write the BibTeX file using the Write tool.
+   If it exists, skip. Otherwise write the BibTeX file using the Write tool.
 
-### Step 4 — Forward search (citations)
+#### 3b — Forward search (citations)
 
-For each seed paper, call `mcp__semantic-scholar__paper_citations` directly with its `paperId`. This is a direct tool call — do not write any script to perform it.
+Call `mcp__semantic-scholar__paper_citations` directly with the paper's `paperId`. This is a direct tool call — do not write any script to perform it.
 
-Apply the same process as Step 3, but write files to `bibtex_output/citations/`.
+Apply the same process as 3a, but write files to `bibtex_output/citations/`.
+
+After both sub-steps complete, print:
+
+```
+  ✓ references: <N> written, <M> skipped  |  citations: <N> written, <M> skipped
+```
+
+Then move immediately to the next paper in the queue.
+
+### Step 4 — Verify completion
+
+Before printing the final summary, verify the queue is fully processed:
+
+```bash
+ls bibtex_output/*.bib | wc -l
+```
+
+The count must equal the number of seed papers discovered in Step 1. If any seed paper was skipped or missed, process it now before continuing.
 
 ### Step 5 — Write BibTeX files
 
@@ -98,13 +131,13 @@ Use this format for every file written (in both `references/` and `citations/`):
 
 ### Step 6 — Print summary
 
-After processing all seed papers, print a report:
+After all seed papers are processed and Step 4 verification passes, print:
 
 ```
 Literature Expansion Summary
 ════════════════════════════
 
-Seed papers processed: 10
+Seed papers processed: 10 / 10
 
 Backwards search (references)
   New files written : 143
@@ -119,12 +152,14 @@ Output directories:
   bibtex_output/citations/    (forwards)
 ```
 
+The "Seed papers processed" line must show `N / N` where both numbers match. If they do not match, return to Step 3 and process the remaining papers.
+
 ---
 
 ## Error handling
 
-- If `paper_references` or `paper_citations` returns an empty list, log `  ⚠ No results for <title>` and continue to the next seed.
-- If a `paperId` cannot be parsed from a `.bib` file's `url` field, log a warning and skip that file.
+- If `paper_references` or `paper_citations` returns an empty list, log `  ⚠ No results for <title>` and continue to the next seed — do not stop.
+- If a `paperId` cannot be parsed from a `.bib` file's `url` field, log a warning and skip that file — do not stop.
 - If `citationCount` is null, treat it as 0 (still write the file).
 - If the input directory contains no `.bib` files, print an error and stop:
   ```
