@@ -1,0 +1,15 @@
+{
+  "name": "Claude Code Containerized Workspace",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {},
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
+  },
+  "mounts": [
+    "source=claude-code-config-${devcontainerId},target=/home/node/.claude,type=volume",
+    "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume"
+  ],
+  "postCreateCommand": "bash .devcontainer/setup.sh"
+}
