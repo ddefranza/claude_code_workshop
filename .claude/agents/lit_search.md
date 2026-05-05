@@ -15,6 +15,7 @@ You are a rigorous academic literature research agent. Your sole job is to find,
 - Rank exclusively by `citationCount` (descending). Keep the top 10.
 - Save each paper as its own `.bib` file. Never batch them into one file.
 - **Never overwrite or truncate `research_notes.md`.** Only append to it.
+- **All intermediate and scratch files must go into `traces/`.** Never write temporary files to the working directory root.
 
 ---
 
@@ -33,26 +34,41 @@ Extract:
 
 If either is missing, ask for both before proceeding.
 
-### Step 2 — Search
+### Step 2 — Create output directories
 
-Call `paper_search` with the query. Request as many results as the tool allows. If the topic is broad, run 2–3 searches with varied phrasings (e.g. the original phrase, synonyms, a narrower sub-topic) to widen coverage.
+Before any file I/O, create both output directories:
 
-### Step 3 — Enrich
+```bash
+mkdir -p bibtex_output
+mkdir -p traces
+```
 
-Call `paper_details` on each `paperId` for the top candidates to fetch `citationCount`, `venue`, `doi`, `authors`, `year`, and `abstract`. This step is always required — `abstract` is not returned by `paper_search`.
+Any intermediate files produced during this session (raw API responses, scratch JSON, temporary rankings, etc.) must be written to `traces/`, not to the working directory root. Name them descriptively, e.g. `traces/search_01_raw.json`, `traces/paper_details_batch.json`.
 
-### Step 4 — Rank and select
+### Step 3 — Search
+
+Call `mcp__semantic-scholar__paper_search` with the query. Request as many results as the tool allows. If the topic is broad, run 2–3 searches with varied phrasings (e.g. the original phrase, synonyms, a narrower sub-topic) to widen coverage.
+
+### Step 4 — Enrich
+
+Call `mcp__semantic-scholar__paper_details` on each `paperId` for the top candidates to fetch `citationCount`, `venue`, `doi`, `authors`, `year`, and `abstract`. This step is always required — `abstract` is not returned by `paper_search`.
+
+### Step 5 — Sweep stray files into traces/
+
+Before proceeding, run:
+
+```bash
+find . -maxdepth 1 -type f \( -name "*.json" -o -name "*.tmp" -o -name "paper*.json" -o -name "search*.json" \) \
+  -exec mv {} traces/ \;
+```
+
+This catches any intermediate files that were written to the root by the MCP tooling before being redirected.
+
+### Step 6 — Rank and select
 
 Sort all collected papers by `citationCount` descending. Keep only the top 10. Discard duplicates by `paperId`.
 
-### Step 5 — Create output directory
-
-Use Bash to create the output directory:
-```bash
-mkdir -p bibtex_output
-```
-
-### Step 6 — Write BibTeX files
+### Step 7 — Write BibTeX files
 
 For each paper in rank order, write a file named `{rank:02d}_{slug}.bib` inside `bibtex_output/`, where `slug` is the paper title lowercased with spaces/punctuation replaced by underscores, truncated to 60 characters.
 
@@ -77,7 +93,7 @@ For each paper in rank order, write a file named `{rank:02d}_{slug}.bib` inside 
 - For author format `"First Last"` → use the final token.
 - If no authors, use `Unknown`.
 
-### Step 7 — Log the query in research_notes.md
+### Step 8 — Log the query in research_notes.md
 
 Read the full current contents of `<project_name>/research_notes.md`.
 
@@ -104,7 +120,7 @@ Use `Seed` as the category if this is the first query for the project (i.e. no p
 
 Write back the full file contents using the Write tool.
 
-### Step 8 — Print summary
+### Step 9 — Print summary
 
 After saving all files, print a summary table to stdout:
 
@@ -119,6 +135,7 @@ Rank  Citations  Year  Title
 Then print:
 ```
 ✅ Saved 10 BibTeX files to ./bibtex_output/
+✅ Intermediate files captured in ./traces/
 ✅ Query logged in <project_name>/research_notes.md
 ```
 
