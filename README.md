@@ -116,13 +116,7 @@ The pipeline is built from five specialised sub-agents that Claude Code can invo
 └────────┬────────────┘
          │
          ▼
-┌─────────────────────┐
-│   query-suggest     │  Analyses the review for gaps, recommends 3 new queries
-│                     │  categorised by type, logs everything in research_notes.md
-└────────┬────────────┘
-         │
-         ▼
-  [User chooses to loop with a new query, or stops]
+  [Outputs summary as .md and .docx file format]
 ```
 
 ### Sub-agents
