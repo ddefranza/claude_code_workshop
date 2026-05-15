@@ -1,151 +1,44 @@
-# Literature Review Pipeline
+# Research Pipeline
 
-Run the full literature review pipeline for this project: search → expand → filter → summarise → suggest new queries, then optionally loop.
-
-## Usage
-
-```
-/literature_review query="<your search query>"
-```
-
-The project name is inferred from the current directory name.
-
----
+Execute the following agents in order. Complete each step fully before proceeding to the next.
 
 ## Pipeline
 
-### Step 1 — Establish project context
+1. Use the **initialize** agent to set up the project directory structure.
 
-Derive the project name from the current working directory:
+2. Use the **search-initialization** agent to extract and fetch any references from the Seed Idea in research_notes.md.
 
-```bash
-basename $(pwd)
-```
+3. Use the **get-related** agent to fetch related papers for all entries in ./literature.
 
-The search query comes from the `query` argument supplied in the invocation. If no `query` argument was provided, read `research_notes.md` and check for a `## Seed Idea` section — use that text as the query. If neither is available, ask the user for a query before proceeding.
+4. Use the **filter-literature** agent with a threshold of **5** to remove irrelevant entries.
 
----
+5. Use the **get-recommended** agent to fetch recommended papers for all entries in ./literature.
 
-### Step 2 — Literature search
+6. Use the **filter-literature** agent with a threshold of **5** to remove irrelevant entries.
 
-Invoke the `literature-search` subagent:
+7. Use the **forward-citations** agent to fetch all papers that cite entries in ./literature.
 
-```
-Use the literature-search agent for project "<project_name>" with query "<query>"
-```
+8. Use the **filter-literature** agent with a threshold of **7** to remove irrelevant entries.
 
-Wait for it to complete before proceeding.
+9. Use the **backward-references** agent to fetch all papers referenced by entries in ./literature.
 
----
+10. Use the **filter-literature** agent with a threshold of **8** to remove irrelevant entries.
 
-### Step 3 — Literature expansion
+11. Use the **bibtex-expand** agent to fill any missing metadata fields in ./literature.
 
-Invoke the `lit-expansion` subagent:
+12. Use the **bibtex-audit** agent to verify the accuracy of all entries in ./literature. If status is FAIL, run the **bibtex-expand** agent for each flagged entry, then remove any unverifiable entries from ./literature. Continue regardless of outcome.
 
-```
-Use the lit-expansion agent to expand the bibliography
-```
+13. Use the **summary-outline** agent to generate a chapter outline from the literature and Seed Idea.
 
-Wait for it to complete before proceeding.
+14. Use the **summary-draft** agent to write a full chapter draft from the outline and literature.
 
----
+15. Use the **citation-audit** agent to verify all citations and references in the draft. If status is FAIL, correct each flagged error directly in ./summary_draft.md — fixing formatting, author names, years, and titles as indicated in ./logs/citation_report.md, and removing any unverifiable citations and their reference list entries. Continue regardless of outcome.
 
-### Step 4 — Literature filter
+16. Use the **export-docx** agent to convert ./summary_draft.md to ./summary_draft.docx.
 
-Invoke the `lit-filter` subagent:
-
-```
-Use the lit-filter agent for the project "<project_name>"
-```
-
-Wait for it to complete before proceeding.
-
----
-
-### Step 5 — Literature summary
-
-Invoke the `lit-summary` subagent:
-
-```
-Use the lit-summary agent for the project "<project_name>"
-```
-
-Wait for it to complete before proceeding.
-
----
-
-### Step 6 — Query suggestion
-
-Invoke the `query-suggest` subagent:
-
-```
-Use the query-suggest agent for the project "<project_name>"
-```
-
-Wait for it to complete and read its output. The subagent will have appended three recommended queries to `research_notes.md` and printed them to the console.
-
----
-
-### Step 7 — Present options to the user
-
-Display the three suggested queries clearly, numbered, with their category and rationale summary. Then present the following prompt **and stop — do not proceed until the user responds**:
-
-```
-════════════════════════════════════════════════════
-  Literature review complete for iteration N.
-
-  Suggested queries for the next iteration:
-
-    [1] "<query 1>"  (Gap-filling)
-        <one-line rationale>
-
-    [2] "<query 2>"  (Methodological)
-        <one-line rationale>
-
-    [3] "<query 3>"  (Adjacent domain)
-        <one-line rationale>
-
-  Would you like to continue with a new query?
-
-    • Type 1, 2, or 3 to run the pipeline with that query
-    • Type a custom query to use your own
-    • Type "stop" (or press Enter) to finish
-════════════════════════════════════════════════════
-```
-
----
-
-### Step 8 — Handle the user's response
-
-**If the user types `stop`, presses Enter, or gives any indication they want to finish:**
-
-Print:
-```
-✅ Literature review complete.
-   Project      : <project_name>
-   Iterations   : <N>
-   Queries used : <list of all queries run this session>
-   Notes file   : <project_name>/research_notes.md
-```
-Then stop.
-
-**If the user selects query 1, 2, or 3, or types a custom query:**
-
-- Set `query` to the selected or typed query.
-- Increment the iteration counter.
-- Clear `bibtex_output/references/` and `bibtex_output/citations/` so the expansion step starts fresh for the new query (the seed files in `bibtex_output/` are also replaced by the new search):
-
-  ```bash
-  rm -rf bibtex_output/references bibtex_output/citations bibtex_output/filtered
-  rm -f bibtex_output/*.bib
-  ```
-
-- Return to **Step 2** and run the full pipeline again with the new query.
-
----
-
-## Notes
-
-- The `## Query Log` in `research_notes.md` accumulates entries across all iterations. It is never cleared between loops.
-- The `## Literature Review` and `## Query Recommendations` sections in `research_notes.md` also accumulate — each iteration appends a new section, building a growing research record.
-- If any subagent fails, print the error and ask the user whether to retry that step or abort the pipeline.
+## On Completion
+Report to the user:
+- Total papers in ./literature
+- Filter passes applied and how many papers were removed at each pass
+- Any issues that were auto-corrected at steps 12 and 15
+- Location of final output: ./summary_draft.docx
