@@ -20,10 +20,7 @@ Write a full draft of a peer-reviewed academic book chapter following the outlin
   - Right: "Analysis of interactions across large archives of articles reveals... (Robertson et al., 2023)."
 
 **Language and style**
-- Apply the recommendations of Strunk & White, *The Elements of Style*: prefer the active voice, omit needless words, use definite and concrete language, and avoid loose sentences.
-- Never use the em dash.
-- Do not place double quotation marks around terms, hedges, or neologisms. Use double quotation marks only when quoting directly from a published work.
-- Avoid scare quotes, throat-clearing preamble, and meta-commentary about the chapter itself.
+- Write in a style suitable for an academic journal article.
 
 **Structure**
 - Follow the section order and thematic groupings in `./summary_outline.md`.
