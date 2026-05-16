@@ -302,11 +302,10 @@ Reads the seed idea from `./research_notes.md` and all `.bib` files in `./litera
 
 ### `summary-draft`
 
-Reads the seed idea, the outline in `./summary_outline.md`, and all `.bib` entries in `./literature`. Writes a full draft of a peer-reviewed academic chapter following the outline structure. Enforces strict academic writing principles throughout: every claim is supported by at least one citation, the literature is synthesised rather than summarised sequentially, all citations use APA 7 parenthetical style, and the prose follows the style recommendations of Strunk and White. Saves the draft to `./summary_draft.md`.
+Reads the seed idea, the outline in `./summary_outline.md`, and all `.bib` entries in `./literature`. Writes a full draft of a peer-reviewed academic chapter following the outline structure. Enforces strict academic writing principles throughout: every claim is supported by at least one citation, the literature is synthesised rather than summarised sequentially, all citations use APA 7 parenthetical style. Saves the draft to `./summary_draft.md`.
 
 **Citation style enforced:**
 - Parenthetical APA 7: `(Author et al., Year)`
-- No author-led constructions: the idea or finding is always foregrounded, with the citation following
 
 **Output:** `./summary_draft.md`
 
